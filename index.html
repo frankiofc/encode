@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FRANKI JS Encoder</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to right, #0f0c29, #302b63, #24243e);
+      color: #ffffff;
+      padding: 20px;
+      margin: 0;
+    }
+
+    h1, h3 {
+      text-align: center;
+      color: #00ffcc;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: #1a1a1a;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 0 15px rgba(0,255,150,0.3);
+    }
+
+    textarea {
+      width: 100%;
+      height: 200px;
+      background: #111;
+      color: #0f0;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 10px;
+      resize: vertical;
+      box-sizing: border-box;
+    }
+
+    .output-area {
+      margin-top: 20px;
+    }
+
+    .button-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    button, input[type="file"] {
+      background: #00ffcc;
+      color: #000;
+      font-weight: bold;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover, input[type="file"]:hover {
+      background: #00ccaa;
+    }
+
+    .output-area textarea {
+      height: 200px;
+      white-space: pre-wrap;
+      overflow-y: auto;
+    }
+
+    @media (max-width: 600px) {
+      .button-group {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🛡️ FRANKI JS Encoder</h1>
+
+  <h3>📂 Upload File JS</h3>
+  <input type="file" id="fileInput" accept=".js" onchange="loadFile(event)" />
+
+  <h3>📝 Atau Tulis Kode JavaScript</h3>
+  <textarea id="input" placeholder="Masukkan kode JavaScript..."></textarea>
+
+  <div class="button-group">
+    <button onclick="encode()">⚙️ Encode Biasa</button>
+    <button onclick="encodeHard()">🧪 Encode Hard</button>
+    <button onclick="encodeViaAPI()">🌐 Encode via API</button>
+    <button onclick="copyOutput()">📋 Salin Hasil</button>
+    <button onclick="downloadOutput()">💾 Download .js</button>
+  </div>
+
+  <div class="output-area">
+    <h3>🔐 Hasil Encode:</h3>
+    <textarea id="output" readonly></textarea>
+  </div>
+</div>
+
+<script>
+let lastEncodedCode = "";
+
+// ========== LOCAL ENCODER ==========
+function loadFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    document.getElementById('input').value = e.target.result;
+  };
+  reader.readAsText(file);
+}
+
+function encode() {
+  const input = document.getElementById('input').value;
+  const base64 = btoa(input);
+  const output = `// Encoded by FRANKI\n(function(){eval(atob("${base64}"));})();`;
+  lastEncodedCode = output;
+  document.getElementById('output').value = output;
+}
+
+function encodeHard() {
+  const input = document.getElementById('input').value;
+  const base64 = btoa(unescape(encodeURIComponent(input)));
+  const watermark = "// Encoded HARD by FRANKI";
+  const obfuscated = `
+${watermark}
+(function(){
+  const decode = Function("return decodeURIComponent(escape(atob('${base64}')))")();
+  eval(decode);
+})();`;
+  lastEncodedCode = obfuscated;
+  document.getElementById('output').value = obfuscated;
+}
+
+// ========== API ENCODER ==========
+function encodeViaAPI() {
+  const code = document.getElementById('input').value;
+  if (!code) return alert("⚠️ Masukkan kode JavaScript terlebih dahulu.");
+
+  const apiURL = 'https://franki-api.example.com/api/encode-hard'; // Ganti URL ini saat online
+
+  fetch(apiURL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.result) {
+      lastEncodedCode = data.result;
+      document.getElementById('output').value = data.result;
+      alert("✅ Berhasil encode via API!");
+    } else {
+      alert("❌ Gagal encode (respon tidak valid)");
+    }
+  })
+  .catch(err => {
+    console.error(err);
+    alert("❌ Terjadi kesalahan saat koneksi ke API.");
+  });
+}
+
+// ========== UTILITAS ==========
+function copyOutput() {
+  const text = document.getElementById('output').value;
+  navigator.clipboard.writeText(text).then(() => {
+    alert("✅ Hasil berhasil disalin ke clipboard!");
+  }).catch(err => {
+    alert("❌ Gagal menyalin teks.");
+  });
+}
+
+function downloadOutput() {
+  if (!lastEncodedCode) return alert("⚠️ Tidak ada hasil encode untuk diunduh.");
+  const blob = new Blob([lastEncodedCode], { type: 'text/javascript' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'franki-encoded.js';
+  link.click();
+}
+</script>
+
+</body>
+</html>
